@@ -1,0 +1,5 @@
+pianola.html
+__pycache__/
+.venv/
+scans/
+*.log

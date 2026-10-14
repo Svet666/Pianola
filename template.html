@@ -1,0 +1,386 @@
+<title>The Pianola</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Limelight&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a 1920s player piano seen head-on. Nameplate on the fallboard, the spool window with the paper roll, the keys, then the tempo lever and controls. Single dark walnut theme by choice. */
+:root {
+  --wood: #26170f;
+  --wood-hi: #3a2416;
+  --brass: #cfa85a;
+  --brass-dim: #8f733d;
+  --paper: #eee2c4;
+  --paper-line: #d9cba8;
+  --hole: #1b110a;
+  --ivory: #f5eedd;
+  --ebony: #17110d;
+  --ink: #f1e5cc;
+  --muted: #b8a17c;
+  --red: #b4432f;
+  --font-display: "Limelight", "Didot", "Bodoni MT", Georgia, serif;
+  --font-body: "Spectral", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: radial-gradient(120% 80% at 50% 0%, var(--wood-hi), var(--wood) 60%) fixed, var(--wood);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.case {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+  display: grid;
+  gap: 18px;
+}
+.plate { text-align: center; display: grid; gap: 4px; }
+.plate h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.2rem, 7vw, 3.6rem);
+  line-height: 1;
+  margin: 0;
+  color: var(--brass);
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 0 #000, 0 0 18px rgba(207,168,90,0.25);
+  text-wrap: balance;
+}
+.plate p { margin: 0; color: var(--muted); font-style: italic; }
+.now {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px;
+  border-top: 1px solid var(--brass-dim); border-bottom: 1px solid var(--brass-dim);
+  padding-block: 8px;
+}
+.now .piece { min-width: 0; }
+.now .title { font-weight: 600; font-size: 1.15rem; }
+.now .composer { color: var(--muted); }
+.now .meter { font-family: var(--font-mono); font-size: 0.85rem; color: var(--brass); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.instrument {
+  border-radius: 10px;
+  background: linear-gradient(#1c110b, #120b07);
+  padding: 12px;
+  box-shadow: inset 0 0 0 2px var(--brass-dim), 0 18px 40px rgba(0,0,0,0.5);
+  display: grid; gap: 0;
+}
+.spool { position: relative; border-radius: 4px 4px 0 0; overflow: hidden; background: var(--paper); }
+#roll { display: block; width: 100%; height: clamp(260px, 46vh, 460px); }
+.tracker { height: 6px; background: linear-gradient(var(--brass), var(--brass-dim)); }
+#keys { display: block; width: 100%; height: clamp(90px, 16vw, 150px); background: var(--ebony); border-radius: 0 0 4px 4px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; }
+.btn {
+  font: 600 1rem var(--font-body);
+  color: var(--wood);
+  background: linear-gradient(#e2c37f, var(--brass));
+  border: 0; border-radius: 999px;
+  padding: 10px 22px;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #6e5428;
+}
+.btn.ghost { background: transparent; color: var(--brass); box-shadow: inset 0 0 0 1px var(--brass-dim); }
+.btn:focus-visible, input:focus-visible, .drop:focus-within { outline: 2px solid var(--ink); outline-offset: 3px; }
+.btn:active { transform: translateY(1px); }
+.lever { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 0; }
+.lever label { font-family: var(--font-mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.lever input { flex: 1; min-width: 0; accent-color: var(--brass); }
+.lever output { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--brass); min-width: 4.5ch; text-align: right; }
+.drop {
+  border: 1px dashed var(--brass-dim); border-radius: 8px;
+  padding: 14px 16px;
+  display: grid; gap: 4px;
+  color: var(--muted);
+}
+.drop.over { background: rgba(207,168,90,0.08); border-color: var(--brass); }
+.drop strong { color: var(--ink); font-weight: 600; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.drop label { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; color: var(--brass); }
+.status { min-height: 1.5em; font-size: 0.95rem; }
+.status.err { color: #f0a08f; }
+.notes { color: var(--muted); font-size: 0.9rem; display: grid; gap: 6px; max-width: 70ch; }
+.notes p { margin: 0; }
+.notes a { color: var(--brass); }
+</style>
+
+<div class="case">
+  <header class="plate">
+    <h1>The Pianola</h1>
+    <p>Feed it a score and it plays itself.</p>
+  </header>
+
+  <div class="now" aria-live="polite">
+    <div class="piece"><span class="title" id="title">Prelude in C major, BWV 846</span> · <span class="composer" id="composer">Johann Sebastian Bach</span></div>
+    <div class="meter" id="meter">Measure 1 of 20</div>
+  </div>
+
+  <div class="instrument">
+    <div class="spool"><canvas id="roll" aria-label="Paper roll with punched notes"></canvas></div>
+    <div class="tracker" aria-hidden="true"></div>
+    <canvas id="keys" aria-label="Piano keyboard"></canvas>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="play" type="button">Play</button>
+    <button class="btn ghost" id="rewind" type="button">Rewind</button>
+    <div class="lever">
+      <label for="tempo">Tempo</label>
+      <input id="tempo" type="range" min="40" max="160" step="5" value="100">
+      <output id="tempoOut" for="tempo">100%</output>
+    </div>
+  </div>
+  <div class="status" id="status" role="status"></div>
+
+  <div class="drop" id="drop">
+    <strong>Load a new roll</strong>
+    <span>Drop a MusicXML file here (.musicxml, .xml or .mxl), or <label for="file">choose one</label>.</span>
+    <input id="file" type="file" accept=".musicxml,.xml,.mxl,application/vnd.recordare.musicxml+xml,application/vnd.recordare.musicxml">
+  </div>
+
+  <div class="notes">
+    <p>Sheet music on paper becomes MusicXML with a music scanner such as <a href="https://audiveris.github.io/audiveris/" target="_blank" rel="noopener">Audiveris</a>, or by exporting from MuseScore. Repeats are played once, straight through.</p>
+    <p>Grand piano: Salamander Grand Piano by Alexander Holm, CC-BY 3.0.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const SAMPLES = __SAMPLES__;
+const DEMO = __DEMO__;
+
+/* ---------- MusicXML ---------- */
+const STEP = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+function parseScore(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.querySelector("parsererror") || !doc.querySelector("part")) throw new Error("not musicxml");
+  const title = (doc.querySelector("work-title") || doc.querySelector("movement-title") || {}).textContent || "Untitled";
+  const composer = (doc.querySelector('creator[type="composer"]') || {}).textContent || "";
+  const notes = [], tempos = [{ q: 0, bpm: 100 }], measures = [];
+  doc.querySelectorAll("part").forEach((part, pi) => {
+    let div = 1, cur = 0;
+    const open = new Map();
+    part.querySelectorAll(":scope > measure").forEach(m => {
+      if (pi === 0) measures.push(cur / div);
+      let lastStart = cur;
+      for (const el of m.children) {
+        const tag = el.tagName;
+        if (tag === "attributes") {
+          const d = el.querySelector("divisions"); if (d) div = +d.textContent || div;
+        } else if (tag === "backup" || tag === "forward") {
+          const d = +(el.querySelector("duration") || {}).textContent || 0;
+          cur += tag === "backup" ? -d : d;
+        } else if (tag === "direction" || tag === "sound") {
+          const s = tag === "sound" ? el : el.querySelector("sound");
+          if (s && s.getAttribute("tempo")) tempos.push({ q: cur / div, bpm: +s.getAttribute("tempo") });
+        } else if (tag === "note") {
+          if (el.querySelector("grace")) continue;
+          const dur = +(el.querySelector("duration") || {}).textContent || 0;
+          const isChord = !!el.querySelector("chord");
+          const start = isChord ? lastStart : cur;
+          if (!isChord) { lastStart = cur; cur += dur; }
+          const p = el.querySelector("pitch");
+          if (!p || el.querySelector("rest")) continue;
+          const midi = (+p.querySelector("octave").textContent + 1) * 12 + STEP[p.querySelector("step").textContent.trim()] + (+(p.querySelector("alter") || {}).textContent || 0);
+          const ties = [...el.querySelectorAll("tie")].map(t => t.getAttribute("type"));
+          const q0 = start / div, q1 = (start + dur) / div;
+          if (ties.includes("stop") && open.has(midi)) {
+            const n = open.get(midi); n.end = Math.max(n.end, q1);
+            if (!ties.includes("start")) open.delete(midi);
+          } else {
+            const n = { midi, start: q0, end: q1 };
+            notes.push(n);
+            if (ties.includes("start")) open.set(midi, n);
+          }
+        }
+      }
+    });
+  });
+  notes.sort((a, b) => a.start - b.start || a.midi - b.midi);
+  tempos.sort((a, b) => a.q - b.q);
+  if (tempos.length > 1 && tempos[1].q === 0) tempos.shift();
+  const end = notes.reduce((m, n) => Math.max(m, n.end), 0);
+  return { title: title.trim(), composer: composer.trim(), notes, tempos, measures, end };
+}
+async function readFile(file) {
+  if (/\.mxl$/i.test(file.name)) {
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    let path = null;
+    const container = zip.file("META-INF/container.xml");
+    if (container) {
+      const c = new DOMParser().parseFromString(await container.async("string"), "application/xml");
+      const rf = c.querySelector("rootfile"); if (rf) path = rf.getAttribute("full-path");
+    }
+    if (!path) path = Object.keys(zip.files).find(k => /\.(xml|musicxml)$/i.test(k) && !k.startsWith("META-INF"));
+    return zip.file(path).async("string");
+  }
+  return file.text();
+}
+
+/* ---------- sound ---------- */
+let ctx = null, comp = null, session = null;
+const buffers = new Map();
+async function initAudio() {
+  if (ctx) return;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3;
+  comp.connect(ctx.destination);
+  await Promise.all(Object.entries(SAMPLES).map(async ([midi, b64]) => {
+    const bin = atob(b64), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    buffers.set(+midi, await ctx.decodeAudioData(u.buffer));
+  }));
+}
+const sampleKeys = () => [...buffers.keys()];
+function strike(midi, when, dur) {
+  let best = null, bd = 99;
+  for (const k of sampleKeys()) { const d = Math.abs(k - midi); if (d < bd) { bd = d; best = k; } }
+  const src = ctx.createBufferSource();
+  src.buffer = buffers.get(best);
+  src.playbackRate.value = Math.pow(2, (midi - best) / 12);
+  const g = ctx.createGain();
+  const vel = 0.55 + 0.1 * Math.random();
+  g.gain.setValueAtTime(0, when);
+  g.gain.linearRampToValueAtTime(vel, when + 0.004);
+  const off = when + Math.max(dur, 0.08);
+  g.gain.setValueAtTime(vel, off);
+  g.gain.exponentialRampToValueAtTime(0.001, off + 0.35);
+  src.connect(g).connect(session);
+  src.start(when); src.stop(off + 0.4);
+}
+
+/* ---------- player ---------- */
+let score = null, playing = false, factor = 1, nextIdx = 0;
+let anchorT = 0, anchorQ = 0, anchorRate = 1, posQ = 0, timer = null;
+const $ = id => document.getElementById(id);
+function bpmAt(q) { let b = score.tempos[0].bpm; for (const t of score.tempos) { if (t.q <= q) b = t.bpm; else break; } return b; }
+function qps() { return bpmAt(posQ) * factor / 60; }
+function nowQ() { return playing ? anchorQ + (ctx.currentTime - anchorT) * anchorRate : posQ; }
+function reanchor() { if (playing) { posQ = nowQ(); anchorQ = posQ; anchorT = ctx.currentTime; anchorRate = qps(); } }
+function schedule() {
+  posQ = nowQ();
+  if (Math.abs(qps() - anchorRate) > 1e-9) reanchor();
+  const rate = anchorRate, horizon = posQ + rate * 1.0;
+  while (nextIdx < score.notes.length && score.notes[nextIdx].start < horizon) {
+    const n = score.notes[nextIdx++];
+    if (n.start < posQ - 0.05) continue;
+    const when = anchorT + (n.start - anchorQ) / rate;
+    strike(n.midi, Math.max(when, ctx.currentTime), (n.end - n.start) / rate);
+  }
+  if (posQ > score.end + 0.5) stop(true);
+}
+async function play() {
+  setStatus("Warming up the hammers…");
+  try { await initAudio(); } catch (e) { setStatus("This browser could not start the piano's sound.", true); return; }
+  await ctx.resume();
+  setStatus("");
+  session = ctx.createGain(); session.gain.value = 0.8; session.connect(comp);
+  playing = true; anchorQ = posQ; anchorT = ctx.currentTime + 0.05; anchorRate = qps();
+  nextIdx = score.notes.findIndex(n => n.start >= posQ - 0.001); if (nextIdx < 0) nextIdx = score.notes.length;
+  timer = setInterval(schedule, 25); schedule();
+  $("play").textContent = "Pause";
+}
+function stop(finished) {
+  if (!playing) return;
+  posQ = nowQ(); playing = false; clearInterval(timer);
+  const old = session;
+  old.gain.setValueAtTime(old.gain.value, ctx.currentTime);
+  old.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+  setTimeout(() => old.disconnect(), 1600);
+  $("play").textContent = "Play";
+  if (finished) { posQ = 0; setStatus("Fine, the end. Rewound for another go."); }
+}
+$("play").onclick = () => playing ? stop(false) : play();
+$("rewind").onclick = () => { const was = playing; if (was) stop(false); posQ = 0; if (was) play(); };
+$("tempo").oninput = e => { factor = +e.target.value / 100; $("tempoOut").textContent = e.target.value + "%"; };
+function setStatus(t, err) { const s = $("status"); s.textContent = t; s.classList.toggle("err", !!err); }
+
+function loadScore(text, name) {
+  let s;
+  try { s = parseScore(text); } catch (e) { setStatus(`Couldn't read ${name || "that file"}. It needs to be MusicXML (.musicxml, .xml or .mxl).`, true); return false; }
+  if (!s.notes.length) { setStatus(`${name || "That score"} has no notes to play.`, true); return false; }
+  if (playing) stop(false);
+  score = s; posQ = 0;
+  $("title").textContent = s.title; $("composer").textContent = s.composer || "Composer unknown";
+  fitKeys(); setStatus(name ? `Loaded ${name}: ${s.notes.length} notes.` : "");
+  return true;
+}
+const drop = $("drop");
+$("file").onchange = async e => { const f = e.target.files[0]; if (f) loadScore(await readFile(f), f.name); e.target.value = ""; };
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", async e => { const f = e.dataTransfer.files[0]; if (f) { try { loadScore(await readFile(f), f.name); } catch { setStatus("Couldn't open that file.", true); } } });
+
+/* ---------- drawing ---------- */
+const roll = $("roll"), keys = $("keys"), rc = roll.getContext("2d"), kc = keys.getContext("2d");
+const BLACK = new Set([1, 3, 6, 8, 10]);
+let lo = 36, hi = 96, whites = [], css = {};
+function fitKeys() {
+  let a = Math.min(...score.notes.map(n => n.midi)), b = Math.max(...score.notes.map(n => n.midi));
+  a = Math.max(21, a - (a % 12) - 0); b = Math.min(108, b + (11 - (b % 12)));
+  while (b - a < 47) { if (a > 21) a -= 12; if (b - a < 47 && b < 108) b += 12; if (a <= 21 && b >= 108) break; }
+  lo = Math.max(21, a); hi = Math.min(108, b);
+  whites = []; for (let m = lo; m <= hi; m++) if (!BLACK.has(m % 12)) whites.push(m);
+}
+function keyRect(m, W) {
+  const ww = W / whites.length;
+  if (!BLACK.has(m % 12)) { const i = whites.indexOf(m); return { x: i * ww, w: ww, black: false }; }
+  const i = whites.indexOf(m - 1); return { x: (i + 1) * ww - ww * 0.32, w: ww * 0.64, black: true };
+}
+function size(c) { const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1; if (c.width !== Math.round(r.width * d) || c.height !== Math.round(r.height * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); } return { W: c.width, H: c.height, d }; }
+function readCss() { const s = getComputedStyle(document.documentElement); for (const k of ["paper", "paper-line", "hole", "ivory", "ebony", "brass", "red", "wood"]) css[k] = s.getPropertyValue("--" + k).trim(); }
+function draw() {
+  const q = nowQ();
+  const { W, H, d } = size(roll);
+  const pxq = 70 * d * Math.max(0.7, Math.min(1.3, H / (380 * d)));
+  rc.fillStyle = css.paper; rc.fillRect(0, 0, W, H);
+  rc.strokeStyle = css["paper-line"]; rc.lineWidth = 1;
+  for (const m of whites) { if (m % 12 === 0) { const r = keyRect(m, W); rc.beginPath(); rc.moveTo(r.x, 0); rc.lineTo(r.x, H); rc.stroke(); } }
+  for (const mq of score.measures) {
+    const y = H - (mq - q) * pxq; if (y < -2 || y > H + 2) continue;
+    rc.fillStyle = css["paper-line"]; rc.fillRect(0, y, W, 1 * d);
+  }
+  // the printed expression line, as on real rolls
+  rc.strokeStyle = css.red; rc.globalAlpha = 0.55; rc.lineWidth = 1.5 * d; rc.beginPath();
+  for (let y = 0; y <= H; y += 6 * d) { const qq = q + (H - y) / pxq; const x = W * 0.06 + Math.sin(qq * 0.9) * W * 0.02 + Math.sin(qq * 0.23) * W * 0.015; y ? rc.lineTo(x, y) : rc.moveTo(x, y); }
+  rc.stroke(); rc.globalAlpha = 1;
+  for (const n of score.notes) {
+    if (n.end < q - 0.1) continue;
+    const yTop = H - (n.end - q) * pxq; if (yTop > H) continue;
+    const yBot = H - (n.start - q) * pxq; if (yBot < 0) break;
+    if (n.midi < lo || n.midi > hi) continue;
+    const r = keyRect(n.midi, W), hw = Math.max(2 * d, (r.black ? r.w : r.w) * 0.42);
+    const cx = r.x + r.w / 2;
+    rc.fillStyle = css.hole;
+    const h = Math.max(4 * d, yBot - yTop - 2 * d);
+    rc.beginPath(); rc.roundRect ? rc.roundRect(cx - hw / 2, yTop, hw, h, hw / 2) : rc.rect(cx - hw / 2, yTop, hw, h); rc.fill();
+  }
+  // sprocket perforations on both margins
+  rc.fillStyle = css.hole; const step = 22 * d, off = ((q * pxq) % step + step) % step;
+  for (let y = -step + off; y < H; y += step) { rc.fillRect(3 * d, y, 4 * d, 7 * d); rc.fillRect(W - 7 * d, y, 4 * d, 7 * d); }
+  drawKeys(q);
+  const mi = score.measures.length ? score.measures.filter(m => m <= q + 1e-6).length : 0;
+  $("meter").textContent = `Measure ${Math.max(1, mi)} of ${score.measures.length}`;
+  requestAnimationFrame(draw);
+}
+function drawKeys(q) {
+  const { W, H, d } = size(keys);
+  const down = new Set();
+  for (const n of score.notes) { if (n.start > q) break; if (n.end > q) down.add(n.midi); }
+  kc.fillStyle = css.ebony; kc.fillRect(0, 0, W, H);
+  for (const m of whites) {
+    const r = keyRect(m, W), on = down.has(m);
+    kc.fillStyle = on ? css.brass : css.ivory;
+    kc.fillRect(r.x + 1 * d, on ? 2 * d : 0, r.w - 2 * d, H - (on ? 2 * d : 4 * d));
+  }
+  for (let m = lo; m <= hi; m++) if (BLACK.has(m % 12)) {
+    const r = keyRect(m, W), on = down.has(m);
+    kc.fillStyle = on ? css.brass : css.ebony;
+    kc.fillRect(r.x, 0, r.w, H * 0.62 + (on ? 2 * d : 0));
+    if (!on) { kc.fillStyle = "rgba(255,255,255,0.12)"; kc.fillRect(r.x + r.w * 0.2, H * 0.04, r.w * 0.6, H * 0.5); }
+  }
+}
+readCss();
+loadScore(DEMO);
+requestAnimationFrame(draw);
+</script>
